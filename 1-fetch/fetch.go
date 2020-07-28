@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 )
@@ -37,17 +37,19 @@ import (
 func main() {
 	// args are urls
 	for _, url := range os.Args[1:] { // slice off the 0th arg
+
 		resp, err := http.Get(url)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Something went wrong when getting %s\n", url)
 			os.Exit(1)
 		}
-		result, err := ioutil.ReadAll(resp.Body)
+
+		_, err = io.Copy(os.Stdout, resp.Body)
 		resp.Body.Close()
+
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Something went wrong when buffering body of %s\n", url)
 			os.Exit(1)
 		}
-		fmt.Printf("%s", result)
 	}
 }
