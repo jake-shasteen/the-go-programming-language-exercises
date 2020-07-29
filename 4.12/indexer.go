@@ -56,11 +56,12 @@ func NewSearcher(dirPath string) func(search string) ([]*XKCDJSON, error) {
 
 		index, err := strconv.Atoi(strings.Split(fileName, ".")[0])
 		handle(err)
-
-		comicIndex[index] = new(XKCDJSON) // allocate space for XKCDJSON
-		err = json.Unmarshal(b, comicIndex[index])
-		if(err != nil) {
-			fmt.Printf("error unmarshalling: %d\n", index)
+		if index != 404 {
+			comicIndex[index] = new(XKCDJSON) // allocate space for XKCDJSON
+			err = json.Unmarshal(b, comicIndex[index])
+			if(err != nil) {
+				fmt.Printf("error unmarshalling: %d\n", index)
+			}
 		}
 	}
 
