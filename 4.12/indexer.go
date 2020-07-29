@@ -17,6 +17,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"strconv"
+	"unicode"
 )
 
 type XKCDJSON struct {
@@ -34,6 +35,7 @@ type XKCDJSON struct {
 }
 
 func main () {
+	replacer := strings.NewReplacer(",", " ", "\n", " ", "\"", "", "'", "", "(", "", ")", "", "[", "", "]", "", "<", "", ">", "", "{", "", "}", "", ".", "", "?", "", "!", "", ";", "", ":", "", "-", "", "_", "", "/", "", "*", "")
 	// searchIndex := make(map[string]([]int))
 	comicIndex := make(map[int]*XKCDJSON)
 
@@ -57,18 +59,14 @@ func main () {
 		index, err := strconv.Atoi(strings.Split(fileName, ".")[0])
 		handle(err)
 
-		// var tmpXKCD XKCDJSON
-
 		comicIndex[index] = new(XKCDJSON) // allocate space for XKCDJSON
 		err = json.Unmarshal(b, comicIndex[index])
 		handle(err)
 
-		// *(comicIndex[index]) = tmpXKCD
-
 	}
 
 	for index, json := range comicIndex {
-		fmt.Printf("%d: %s \n", index, (*json).SafeTitle)
+		fmt.Printf("%d: %s %s \n", index, (*json).SafeTitle, removeSpace(replacer.Replace((*json).Transcript)))
 	}
 }
 
@@ -76,4 +74,19 @@ func handle(err error) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
+}
+
+func removeSpace(s string) string {
+		var word bool
+    rr := make([]rune, 0, len(s))
+    for _, r := range s {
+        if !unicode.IsSpace(r) {
+            rr = append(rr, r)
+            word = true
+        } else if word {
+        	word = false
+        	rr = append(rr, ' ')
+        }
+    }
+    return string(rr)
 }
