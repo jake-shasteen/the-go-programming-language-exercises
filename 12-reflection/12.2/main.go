@@ -6,60 +6,95 @@ import (
 	"strconv"
 )
 
+// PtrLoopExample has a comment
 type PtrLoopExample struct {
-	ptr *PtrLoopExample
+	name string
+	ptr  *PtrLoopExample
 }
+
+const LoopsAllowed = 8
 
 func main() {
 	// cyclic data structures:
-	// two pointers pointing to one another
 
 	// a struct with a pointer that points to itself
-	loop := &PtrLoopExample{}
+	loop := &PtrLoopExample{
+		name: "loop"}
 	loop.ptr = loop
 
+	// loop5 := &PtrLoopExample{name: "loop5"}
+	// loop4 := &PtrLoopExample{
+	// 	name: "loop4",
+	// 	ptr:  loop5}
+	// loop3 := &PtrLoopExample{
+	// 	name: "loop3",
+	// 	ptr:  loop4}
+	loop2 := &PtrLoopExample{
+		name: "loop2"}
+	loop1 := &PtrLoopExample{
+		name: "loop1",
+		ptr:  loop2}
+	// loop5.ptr = loop1
+
 	Display("loop", loop)
+
+	Display("loop chain", loop1)
 }
 
+// Display has a comment
 func Display(name string, x interface{}) {
 	fmt.Printf("Display %s (%T):\n", name, x)
-	display(name, reflect.ValueOf(x))
+	display(LoopsAllowed, name, reflect.ValueOf(x))
 }
 
 // Make `display` safe to use on cyclic data structures by bounding the number of steps it takes before abandoning the recursion.
-func display(path string, v reflect.Value) {
+func display(count int, path string, v reflect.Value) {
+	if count == 0 {
+		fmt.Printf("Truncated: %s = %s\n", path, formatAtom(v))
+		return
+	}
 	switch v.Kind() {
 	case reflect.Invalid:
+		// terminal
 		fmt.Printf("%s = invalid\n", path)
 	case reflect.Slice, reflect.Array:
 		length := v.Len()
 		for i := 0; i < length; i++ {
-			display(fmt.Sprintf("%s[%d]", path, i), v.Index(i))
+			// non-terminal
+			display(count-1, fmt.Sprintf("%s[%d]", path, i), v.Index(i))
 		}
 	case reflect.Struct:
 		length := v.NumField()
 		for i := 0; i < length; i++ {
+			// non-terminal
 			fieldPath := fmt.Sprintf("%s.%s", path, v.Type().Field(i).Name)
-			display(fieldPath, v.Field(i))
+			display(count-1, fieldPath, v.Field(i))
 		}
 	case reflect.Map:
 		for _, key := range v.MapKeys() {
-			display(fmt.Sprintf("%s[%s]", path, formatComparable(key) /*the rendered key*/), v.MapIndex(key))
+			// non-terminal
+			display(count-1, fmt.Sprintf("%s[%s]", path, formatComparable(key)), v.MapIndex(key))
 		}
 	case reflect.Ptr:
 		if v.IsNil() {
+			// terminal
 			fmt.Printf("%s = nil\n", path)
 		} else {
-			display(fmt.Sprintf("(*%s)", path), v.Elem())
+			// non-terminal
+			display(count-1, fmt.Sprintf("(*%s)", path), v.Elem())
 		}
 	case reflect.Interface:
 		if v.IsNil() {
+			// terminal
 			fmt.Printf("%s = nil\n", path)
 		} else {
+			// terminal
 			fmt.Printf("%s.type = %s\n", path, v.Elem().Type())
-			display(path+".value", v.Elem())
+			// non-terminal
+			display(count-1, path+".value", v.Elem())
 		}
 	default:
+		// terminal
 		fmt.Printf("%s = %s\n", path, formatAtom(v))
 	}
 }
